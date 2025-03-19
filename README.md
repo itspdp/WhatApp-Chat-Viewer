@@ -12,7 +12,7 @@ This project is a web-based application designed to display exported WhatsApp ch
 ## Usage Instructions
 1. Open `index.html` in your browser.  
 2. Click on the **"Choose File"** button and select your `.txt` file.  
-3. Ensure media files are kept in the same folder as the `.txt` file for proper display.  
+3. Ensure media files are kept in the same folder as the `.txt` file for proper display. (Exactly What a Latest Chat Export by WhatsApp Does.)  
 
 ## How It Works
 1. Click the **"Choose File"** button and select a `.txt` file exported from WhatsApp.  
