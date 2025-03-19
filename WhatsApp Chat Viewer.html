@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WhatsApp Chat Viewer</title>
+  <style>
+    /* Mimic WhatsApp background */
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #e5ddd5;
+      margin: 0;
+      padding: 0;
+    }
+    h2 {
+      background-color: #075e54;
+      color: white;
+      margin: 0;
+      padding: 10px;
+      text-align: center;
+    }
+    /* Chat container styling */
+    #chat-container {
+      max-width: 600px;
+      margin: 20px auto;
+      padding: 10px;
+      background-color: #ffffff;
+      border-radius: 5px;
+      box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
+      overflow-y: auto;
+      height: 80vh;
+      display: flex;
+      flex-direction: column;
+    }
+    /* Chat bubble styling */
+    .message {
+      margin: 5px 0;
+      padding: 8px 12px;
+      border-radius: 7px;
+      max-width: 70%;
+      word-wrap: break-word;
+      clear: both;
+    }
+    .user {
+      background-color: #dcf8c6;
+      align-self: flex-end;
+    }
+    .other {
+      background-color: #ffffff;
+      border: 1px solid #f1f1f1;
+      align-self: flex-start;
+    }
+    img, video {
+      max-width: 100%;
+      margin-top: 5px;
+      border-radius: 5px;
+    }
+    a.download-link {
+      margin-top: 5px;
+      display: block;
+    }
+    /* File input styling */
+    #fileInput {
+      margin: 10px auto;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <h2>WhatsApp Chat Viewer</h2>
+  <input type="file" id="fileInput" accept=".txt">
+  <div id="chat-container"></div>
+  
+  <script>
+    // Global variables for infinite scroll loading
+    let allMessages = [];
+    let currentIndex = 0;
+    const chunkSize = 100;
+    const chatContainer = document.getElementById("chat-container");
+
+    // Function to create a chat bubble element
+    function createMessageElement(date, time, sender, message) {
+      let msgElement = document.createElement("div");
+      msgElement.classList.add("message", sender.trim() === "You" ? "user" : "other");
+      
+      // Check if the message indicates an attached file
+      if (message.includes("(file attached)")) {
+        let fileName = message.replace("(file attached)", "").trim();
+        let fileExt = fileName.split('.').pop().toLowerCase();
+        let mediaElement;
+        if (["jpg", "png", "jpeg", "gif"].includes(fileExt)) {
+          mediaElement = document.createElement("img");
+          mediaElement.src = fileName;
+        } else if (["mp4", "webm", "ogg"].includes(fileExt)) {
+          mediaElement = document.createElement("video");
+          mediaElement.src = fileName;
+          mediaElement.controls = true;
+        } else {
+          mediaElement = document.createElement("a");
+          mediaElement.href = fileName;
+          mediaElement.innerText = "Download File";
+          mediaElement.classList.add("download-link");
+          mediaElement.target = "_blank";
+        }
+        msgElement.innerHTML = `<strong>${sender}:</strong>`;
+        msgElement.appendChild(mediaElement);
+      } else {
+        // Regular text message
+        msgElement.innerHTML = `<strong>${sender}:</strong> ${message}`;
+      }
+      return msgElement;
+    }
+
+    // Function to load the next batch of messages
+    function loadNextMessages() {
+      let endIndex = Math.min(currentIndex + chunkSize, allMessages.length);
+      for (let i = currentIndex; i < endIndex; i++) {
+        const { date, time, sender, message } = allMessages[i];
+        const msgElement = createMessageElement(date, time, sender, message);
+        chatContainer.appendChild(msgElement);
+      }
+      currentIndex = endIndex;
+    }
+
+    // Event listener for infinite scroll: load more messages when near the bottom
+    chatContainer.addEventListener("scroll", function() {
+      if (chatContainer.scrollTop + chatContainer.clientHeight >= chatContainer.scrollHeight - 50) {
+        if (currentIndex < allMessages.length) {
+          loadNextMessages();
+        }
+      }
+    });
+
+    // File input event: parse file and prepare messages for infinite scroll
+    document.getElementById('fileInput').addEventListener('change', function(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        // Reset chat container and global message variables
+        chatContainer.innerHTML = "";
+        allMessages = [];
+        currentIndex = 0;
+        
+        // Regex to match: DD/MM/YYYY, HH:MM - Sender: Message
+        const lineRegex = /(\d{2}\/\d{2}\/\d{4}),\s*(\d{2}:\d{2})\s*-\s*(.*?):\s*(.*)/;
+        const lines = e.target.result.split('\n');
+        lines.forEach(line => {
+          const match = line.match(lineRegex);
+          if (match) {
+            const [_, date, time, sender, message] = match;
+            allMessages.push({ date, time, sender, message });
+          }
+        });
+        // Initially load the first batch of messages
+        loadNextMessages();
+      };
+      reader.readAsText(file);
+    });
+  </script>
+</body>
+</html>
